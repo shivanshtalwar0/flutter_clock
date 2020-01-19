@@ -38,17 +38,14 @@ class DrawnHand extends Hand {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: SizedBox.expand(
-        child: CustomPaint(
-          painter: _HandPainter(
-            handSize: size,
-            lineWidth: thickness,
-            angleRadians: angleRadians,
-            color: color,
-          ),
-        ),
-      ),
-    );
+        child: SizedBox.expand(
+            child: CustomPaint(
+                painter: _HandPainter(
+      handSize: size,
+      lineWidth: thickness,
+      angleRadians: angleRadians,
+      color: color,
+    ))));
   }
 }
 
@@ -74,6 +71,7 @@ class _HandPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = (Offset.zero & size).center;
+
     // We want to start at the top, not at the x-axis, so add pi/2.
     final angle = angleRadians - math.pi / 2.0;
     final length = size.shortestSide * 0.5 * handSize;
@@ -81,9 +79,11 @@ class _HandPainter extends CustomPainter {
     final linePaint = Paint()
       ..color = color
       ..strokeWidth = lineWidth
-      ..strokeCap = StrokeCap.square;
+      ..strokeCap = StrokeCap.round;
 
     canvas.drawLine(center, position, linePaint);
+
+
   }
 
   @override

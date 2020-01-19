@@ -3,14 +3,15 @@
 // found in the LICENSE file.
 
 import 'dart:async';
-
+import 'dart:ui';
+import 'package:analog_clock/DayNightEffect.dart';
+import 'package:analog_clock/SecondsDial.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_clock_helper/model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart';
 import 'package:vector_math/vector_math_64.dart' show radians;
-
-import 'container_hand.dart';
 import 'drawn_hand.dart';
 
 /// Total distance traveled by a second or a minute hand, each second or minute,
@@ -39,6 +40,9 @@ class _AnalogClockState extends State<AnalogClock> {
   var _condition = '';
   var _location = '';
   Timer _timer;
+  Gradient daynighteffect;
+  Color dialcolor;
+  Color tickcolor;
 
   @override
   void initState() {
@@ -77,24 +81,22 @@ class _AnalogClockState extends State<AnalogClock> {
   void _updateTime() {
     setState(() {
       _now = DateTime.now();
-      // Update once per second. Make sure to do it at the beginning of each
-      // new second, so that the clock is accurate.
+      DayNightEffect effect = DayNightEffect(hour:_now.hour);
+
       _timer = Timer(
         Duration(seconds: 1) - Duration(milliseconds: _now.millisecond),
         _updateTime,
       );
+      daynighteffect = LinearGradient(
+          tileMode: TileMode.clamp,
+          colors: effect.evaluateColorPattern()['colors']);
+      dialcolor = effect.evaluateColorPattern()['dialcolor'];
+      tickcolor = effect.evaluateColorPattern()['tickcolor'];
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // There are many ways to apply themes to your clock. Some are:
-    //  - Inherit the parent Theme (see ClockCustomizer in the
-    //    flutter_clock_helper package).
-    //  - Override the Theme.of(context).colorScheme.
-    //  - Create your own [ThemeData], demonstrated in [AnalogClock].
-    //  - Create a map of [Color]s to custom keys, demonstrated in
-    //    [DigitalClock].
     final customTheme = Theme.of(context).brightness == Brightness.light
         ? Theme.of(context).copyWith(
             // Hour hand.
@@ -103,7 +105,7 @@ class _AnalogClockState extends State<AnalogClock> {
             highlightColor: Color(0xFF8AB4F8),
             // Second hand.
             accentColor: Color(0xFF669DF6),
-            backgroundColor: Color(0xFFD2E3FC),
+            backgroundColor: Colors.black,
           )
         : Theme.of(context).copyWith(
             primaryColor: Color(0xFFD2E3FC),
@@ -132,46 +134,27 @@ class _AnalogClockState extends State<AnalogClock> {
         value: time,
       ),
       child: Container(
-        color: customTheme.backgroundColor,
+        decoration:
+            BoxDecoration(shape: BoxShape.circle, gradient: daynighteffect),
         child: Stack(
           children: [
-            // Example of a hand drawn with [CustomPainter].
-            DrawnHand(
-              color: customTheme.accentColor,
-              thickness: 4,
-              size: 1,
-              angleRadians: _now.second * radiansPerTick,
+            SecondsDial(
+              seconds: _now.second,
+              dialcolor: dialcolor,
+              tickcolor: tickcolor,
             ),
             DrawnHand(
-              color: customTheme.highlightColor,
-              thickness: 16,
-              size: 0.9,
+              color: tickcolor,
+              thickness: 4,
+              size: 0.6,
               angleRadians: _now.minute * radiansPerTick,
             ),
-            // Example of a hand drawn with [Container].
-            ContainerHand(
-              color: Colors.transparent,
-              size: 0.5,
+            DrawnHand(
+              color: tickcolor,
+              thickness: 5,
+              size: 0.4,
               angleRadians: _now.hour * radiansPerHour +
                   (_now.minute / 60) * radiansPerHour,
-              child: Transform.translate(
-                offset: Offset(0.0, -60.0),
-                child: Container(
-                  width: 32,
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: customTheme.primaryColor,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 0,
-              bottom: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: weatherInfo,
-              ),
             ),
           ],
         ),
